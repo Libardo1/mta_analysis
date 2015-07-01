@@ -30,6 +30,7 @@ class TurnStiles:
                         data[key] = [row[4:]]
                     else:
                         data[key].append(row[4:])
+        
         return data
 
     #Challenge 2 
@@ -40,19 +41,21 @@ class TurnStiles:
             temp = data[key]
             temp.sort()
             for x in range(len(temp)):
+                #print temp[x]
                 d_t_string = " ".join(temp[x][2:4])
                 d_t = datetime.datetime.strptime(d_t_string, "%m/%d/%Y %H:%M:%S")
                 if x > 0:
                     val = [d_t, int(temp[x][5]) - int(temp[x-1][5])]
                 else:
                     val = [d_t, 0] #could cause problems later
-                    self.starts[key] = temp[x][5]
+                    self.starts[key] = temp[x]
                 if x == len(temp) -1:
-                    self.ends[key] = temp[x][5]
+                    self.ends[key] = temp[x]
                 if key not in date_time:
                     date_time[key] = [val]
                 else:
                     date_time[key].append(val)        
+        #print "starts:", self.starts, "ends:", self.ends
         data = None
         return date_time
             
@@ -92,17 +95,23 @@ class TurnStiles:
         return day_entries
 
     #Challenge 4, 7
-    def plot_random(self, data):
+    def plot_random(self, data, multiple=False):
         key = random.choice(data.keys())
         terminal = data[key]
-        self.make_graph(terminal, key)
+        if multiple:
+            self.plot_multiple_weeks(terminal, key)
+        else:
+            self.make_graph(terminal, key)
 
     #Challenge 4, 7
-    def plot_specific(self, data, key):
-        '''Plots the values of a specific key from a dictionary. dict, key'''
+    def plot_specific(self, data, key, multiple=False):
+        '''Plots a specific key from a dictionary. dict, key, multiple keys?'''
         if key in data:
             terminal = data[key]
-            self.make_graph(terminal, key)
+            if multiple:
+               self.plot_multiple_weeks(terminal, key)
+            else:
+                self.make_graph(terminal, key)
         else:
             print "please input a valid key"
 
@@ -119,6 +128,29 @@ class TurnStiles:
         plt.title(key)
         plt.show()
 
+    #Challenge 8
+    def plot_multiple_weeks(self, terminal, key):
+        #dates = ["Sat", "Sun", "Mon", "Tues", "Wed", "Thur", "Fri"]
+        dates = [0, 1, 2, 3, 4, 5, 6]
+        weeks = []
+        start = terminal[0][0].day % 7 #day of week, usually Saturday
+        temp = []
+        for x in range(len(terminal)):
+            if terminal[x][0].day % 7 == start:
+                if temp:
+                    weeks.append(temp)
+                    temp = []
+            temp.append(terminal[x][1])
+        weeks.append(temp)
+        plt.figure(figsize=(10,3))
+        for w in weeks:
+            plt.plot(dates,w)
+        plt.title(key)
+        plt.show()
+                
+                
+            
+
     #Challenge 5, 6
     def combine_terminals(self, data, key_bool, clear=True):
         all_terminals = {}
@@ -133,52 +165,55 @@ class TurnStiles:
                 all_terminals[new_key] = all_terminals[new_key] + value
             else:
                 all_terminals[new_key] = value
-            #all_terminals[new_key].append(tuple([datetime.datetime(2015, 1, 1, 1, 1), 10000000]))
         #print all_terminals
         all_terminals = self.day_entries(all_terminals)
         if clear:
             data = None
         return all_terminals
 
-    def run_all(self):
-        
-        files = ["turnstile_150613.txt", "turnstile_150620.txt", "turnstile_150627.txt"]
-        dd = defaultdict(list)
-        dicts = []
+    # Challenge 8?
+    def combine_weeks(self, files):
+        d = {}
+        dictlist = []
         for f in files:
             di = t.read_csv(f)
-            dicts.append(di)
-        for dt in dicts:
-            for key, value in dd.iteritems():
-                dd[key].append(value)
-        d = dict((k, v) for k, v in dd.iteritems() if v)
-        d = t.read_csv("testdata2.txt")
-        #d = t.read_csv("turnstile_150613.txt")        
-        #print "d\n\n", d
-        d_t = t.datetime_entries(d)
-        #print d_t
-        #print d_t
-        #print "\n\n\n"
-        d_e = t.day_entries(d_t)
-        #print d_e
-        t.plot_random(d_e)
+            dictlist.append(di)
+        for dl in dictlist:
+            for key in dl:
+                #print key
+                if key in d:
+                    d[key] += dl[key]
+                else:
+                    d[key] = dl[key]
+        return d
+
+    def run_all(self, multiple=False):
+        if multiple:
+            files = ["turnstile_150606.txt", "turnstile_150613.txt", "turnstile_150620.txt", "turnstile_150627.txt"]
+            d = self.combine_weeks(files)
+        else:
+            d = t.read_csv("testdata2.txt")
+            #d = t.read_csv("turnstile_150627.txt")        
+        d_t = self.datetime_entries(d)
+        d_e = self.day_entries(d_t)
+        self.plot_random(d_e, multiple=multiple)
         keys = [("A002","R051","02-03-03","LEXINGTON AVE"), ("A002","R051","02-03-01","LEXINGTON AVE")]
         for key in keys:
-            t.plot_specific(d_e, key)
+            self.plot_specific(d_e, key, multiple=multiple)
         #print "\n"
-        ac = t.combine_terminals(d_e, True)
-        print ac
+        ac = self.combine_terminals(d_e, True)
+        #print ac
         #print "#6:"
-        ter = t.combine_terminals(ac, False)
-        t.plot_random(ter)
+        ter = self.combine_terminals(ac, False)
+        self.plot_random(ter, multiple=multiple)
         stations = ["LEXINGTON AVE", "5 AVE-59 ST", "57 ST-7 AVE", "34 ST-HERALD SQ", "28 ST-BROADWAY"]
         for place in stations:
-            t.plot_specific(ter, place)
+            self.plot_specific(ter, place, multiple=multiple)
 
 
 if __name__ == "__main__":
     t = TurnStiles()
-    t.run_all()
+    t.run_all(multiple=True)
 
     ##TODO linter emacs
     ##TODO eliminate 0 <= count <= 5000 in challenge 2
