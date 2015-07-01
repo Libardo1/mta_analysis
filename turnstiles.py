@@ -37,6 +37,7 @@ class TurnStiles:
     def datetime_entries(self, data):
         #csv format: [,,06/20/2015, 00:00:00,,entries,]
         date_time = {}
+        outlier = False
         for key in data:
             temp = data[key]
             temp.sort()
@@ -45,18 +46,22 @@ class TurnStiles:
                 d_t_string = " ".join(temp[x][2:4])
                 d_t = datetime.datetime.strptime(d_t_string, "%m/%d/%Y %H:%M:%S")
                 if x > 0:
-                    val = [d_t, int(temp[x][5]) - int(temp[x-1][5])]
+                    count = int(temp[x][5]) - int(temp[x-1][5])
+                    val = [d_t, count ]
+                    if count < 0 or count > 5000:
+                        outlier = True
+                        #pass
                 else:
                     val = [d_t, 0] #could cause problems later
                     self.starts[key] = temp[x]
-                if x == len(temp) -1:
-                    self.ends[key] = temp[x]
-                if key not in date_time:
-                    date_time[key] = [val]
-                else:
-                    date_time[key].append(val)        
-        #print "starts:", self.starts, "ends:", self.ends
-        data = None
+                if not outlier:
+                    if x == len(temp) -1:
+                        self.ends[key] = temp[x]
+                    if key not in date_time:
+                        date_time[key] = [val]
+                    else:
+                        date_time[key].append(val)
+                outlier = False
         return date_time
             
     #Challenge 3, 5, 6
@@ -143,8 +148,10 @@ class TurnStiles:
             temp.append(terminal[x][1])
         weeks.append(temp)
         plt.figure(figsize=(10,3))
+        print weeks
         for w in weeks:
-            plt.plot(dates,w)
+            if len(w) == 7:
+                plt.plot(dates,w)
         plt.title(key)
         plt.show()
                 
