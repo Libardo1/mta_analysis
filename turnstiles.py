@@ -8,8 +8,9 @@ class TurnStiles:
     def __init__(self):
         self.stations = []
 
+    #Challenge 1
     def read_csv(self, filename):
-        #C/A,UNIT,SCP,STATION,LINENAME,DIVISION,DATE,TIME,DESC,ENTRIES,EXITS     
+        #C/A,UNIT,SCP,STATION,LINENAME,DIVISION,DATE,TIME,DESC,ENTRIES,EXITS
         data = {}
         with open(filename, 'rb') as csvfile:
             filereader = csv.reader(csvfile, skipinitialspace=True, delimiter=",")
@@ -17,15 +18,9 @@ class TurnStiles:
             csvfile.seek(0)  # rewind
             incsv = csv.reader(csvfile)
             if has_header:
-                #next(incsv)  # skip header row
-                assert rows.pop(0) == (['C/A', 'UNIT', 'SCP', 'STATION',
-                                       'LINENAME', 'DIVISION', 'DATE', 'TIME',
-                                       'DESC', 'ENTRIES', 'EXITS'], 
-                                       "Wrong header")
+                next(incsv)
                 for row in filereader:
                     row = [' '.join(x.split()) for x in row]
-                    #row[9].lstrip("0")
-                    #row[10].lstrip("0")
                     self.stations.append(row[3]) #keep list of stations
                     key = tuple(row[:4])
                     if key not in data:
@@ -34,6 +29,7 @@ class TurnStiles:
                         data[key].append(row[4:])
         return data
 
+    #Challenge 2 
     def datetime_entries(self, data):
         #csv format: [,,06/20/2015, 00:00:00,,entries,]
         date_time = {}
