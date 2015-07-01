@@ -1,0 +1,6 @@
+# Don't include data files
+.txt
+
+# Emacs auto generated files
+~
+
