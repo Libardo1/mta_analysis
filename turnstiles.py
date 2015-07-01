@@ -2,11 +2,14 @@ import csv
 import datetime
 import random
 import matplotlib.pyplot as plt
+from collections import defaultdict
 
 class TurnStiles:
     
     def __init__(self):
-        self.stations = []
+        #self.stations = []
+        self.starts = {}
+        self.ends = {}
 
     #Challenge 1
     def read_csv(self, filename):
@@ -21,7 +24,7 @@ class TurnStiles:
                 next(incsv)
                 for row in filereader:
                     row = [' '.join(x.split()) for x in row]
-                    self.stations.append(row[3]) #keep list of stations
+                    #self.stations.append(row[3]) #keep list of stations
                     key = tuple(row[:4])
                     if key not in data:
                         data[key] = [row[4:]]
@@ -35,23 +38,25 @@ class TurnStiles:
         date_time = {}
         for key in data:
             temp = data[key]
+            temp.sort()
             for x in range(len(temp)):
                 d_t_string = " ".join(temp[x][2:4])
                 d_t = datetime.datetime.strptime(d_t_string, "%m/%d/%Y %H:%M:%S")
                 if x > 0:
-                    #if temp[x-1] != temp[-1]: # not first element of list
                     val = [d_t, int(temp[x][5]) - int(temp[x-1][5])]
                 else:
-                    val = [d_t, 0]
+                    val = [d_t, 0] #could cause problems later
+                    self.starts[key] = temp[x][5]
+                if x == len(temp) -1:
+                    self.ends[key] = temp[x][5]
                 if key not in date_time:
                     date_time[key] = [val]
                 else:
-                    date_time[key].append(val)
-            
+                    date_time[key].append(val)        
         data = None
         return date_time
             
-
+    #Challenge 3, 5, 6
     def day_entries(self, data):
         day_entries = {}
         for key in data:
@@ -85,12 +90,14 @@ class TurnStiles:
                             day_entries[key].append(val)
                 date = nextdate
         return day_entries
-            
+
+    #Challenge 4, 7
     def plot_random(self, data):
         key = random.choice(data.keys())
         terminal = data[key]
         self.make_graph(terminal, key)
 
+    #Challenge 4, 7
     def plot_specific(self, data, key):
         '''Plots the values of a specific key from a dictionary. dict, key'''
         if key in data:
@@ -99,6 +106,7 @@ class TurnStiles:
         else:
             print "please input a valid key"
 
+    #Challenge 4, 7
     def make_graph(self, terminal, key):
         '''Takes a list and a title'''
         dates = []
@@ -111,6 +119,7 @@ class TurnStiles:
         plt.title(key)
         plt.show()
 
+    #Challenge 5, 6
     def combine_terminals(self, data, key_bool, clear=True):
         all_terminals = {}
         for key, value in data.items():
@@ -132,8 +141,19 @@ class TurnStiles:
         return all_terminals
 
     def run_all(self):
-        #d = t.read_csv("testdata2.txt")
-        d = t.read_csv("turnstile_150613.txt")
+        
+        files = ["turnstile_150613.txt", "turnstile_150620.txt", "turnstile_150627.txt"]
+        dd = defaultdict(list)
+        dicts = []
+        for f in files:
+            di = t.read_csv(f)
+            dicts.append(di)
+        for dt in dicts:
+            for key, value in dd.iteritems():
+                dd[key].append(value)
+        d = dict((k, v) for k, v in dd.iteritems() if v)
+        d = t.read_csv("testdata2.txt")
+        #d = t.read_csv("turnstile_150613.txt")        
         #print "d\n\n", d
         d_t = t.datetime_entries(d)
         #print d_t
@@ -161,4 +181,11 @@ if __name__ == "__main__":
     t.run_all()
 
     ##TODO linter emacs
+    ##TODO eliminate 0 <= count <= 5000 in challenge 2
+    ## daytime_counts = {turnstile: [(time, count) for (time, count, _)
+    ##                                in rows if 0 <= count <= 5000]
+    ##                  for turnstile, rows in datetime_count_times.items()}
     
+
+    ## timeline values for project: 16----- 00 ------04
+    ##                              0       d1       d2
