@@ -17,7 +17,11 @@ class TurnStiles:
             csvfile.seek(0)  # rewind
             incsv = csv.reader(csvfile)
             if has_header:
-                next(incsv)  # skip header row
+                #next(incsv)  # skip header row
+                assert rows.pop(0) == (['C/A', 'UNIT', 'SCP', 'STATION',
+                                       'LINENAME', 'DIVISION', 'DATE', 'TIME',
+                                       'DESC', 'ENTRIES', 'EXITS'], 
+                                       "Wrong header")
                 for row in filereader:
                     row = [' '.join(x.split()) for x in row]
                     #row[9].lstrip("0")
