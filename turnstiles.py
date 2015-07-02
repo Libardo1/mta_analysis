@@ -117,26 +117,36 @@ class TurnStiles:
 
     #Challenge 4, 7
     def plot_random(self, data, multiple=False):
-        key = random.choice(data.keys())
-        terminal = data[key]
         if multiple:
-            #self.plot_multiple_weeks(terminal, key)
-            pass
+            #print data
+            key = random.choice(data[0].keys())
+            terminals = []
+            for d in data:
+                terminals.append(d[key])
+            self.plot_multiple_weeks(terminals, key)
         else:
+            key = random.choice(data.keys())
+            terminal = data[key]
             self.make_graph(terminal, key)
 
     #Challenge 4, 7
     def plot_specific(self, data, key, multiple=False):
         '''Plots a specific key from a dictionary. dict, key, multiple keys?'''
-        if key in data:
-            terminal = data[key]
-            if multiple:
-                #self.plot_multiple_weeks(terminal, key)
-                pass
+        
+        if multiple:
+            if key in data[0]:
+                terminals = []
+                for d in data:
+                    terminals.append(d[key])
+                self.plot_multiple_weeks(terminals, key)
             else:
-                self.make_graph(terminal, key)
+                print "please input a different key"
         else:
-            print "please input a valid key"
+            if key in data:
+                terminal = data[key]
+                self.make_graph(terminal, key)
+            else:
+                print "please input a valid key"
 
     #Challenge 4, 7
     def make_graph(self, terminal, key):
@@ -148,6 +158,17 @@ class TurnStiles:
             counts.append(item[1])
         plt.figure(figsize=(10,3))
         plt.plot(dates,counts)
+        plt.title(key)
+        plt.show()
+    
+    def plot_multiple_weeks(self, terminals, key):
+        dates = range(7)
+        plt.figure(figsize=(10,3))
+        for week in terminals:
+            counts = []
+            for item in week:
+                counts.append(item[1])
+            plt.plot(dates, counts)
         plt.title(key)
         plt.show()
 
@@ -167,34 +188,34 @@ class TurnStiles:
                 all_terminals[new_key] = value
         all_terminals = self.day_entries(all_terminals)
         return all_terminals
-
+        
     # Challenge 8
     def combine_weeks(self, dicts_list, entry_in=5):
-        #for d in dicts_list:
-        #print self.starts_ends
-        startsends = {}
-        #startsends = self.datetime_entries(self.starts_ends)
-        
-        for key in self.starts_ends:
-            temp = self.starts_ends[key]
-            temp.sort()
-            for x in range(len(temp)):
-                d_t_string = " ".join(temp[x][2:4])
-                d_t = datetime.datetime.strptime(d_t_string,"%m/%d/%Y %H:%M:%S")
-                count = int(temp[x][entry_in])
-                val = [d_t, count]
-                if key not in startsends:
-                    startsends[key] = [val]
-                else:
-                    startsends[key].append(val)
-        
+        startends = self.datetime_entries(self.starts_ends)
+        startends = self.day_entries(startends)
+        startends = self.day_only(startends)
+        startends = self.combine_terminals(startends, True)
+        startends = self.combine_terminals(startends, False)
+        for d in dicts_list:
+            index = self.day_index(d)
+            if index != -1:
+                for key in d:
+                    d[key][index].append(startends[key][index])
+            else:
+                print "\noh no!!!!\n"
+        return dicts_list
 
-        print "1:\n", startsends
-        #startends = self.day_entries(startends)
-        #startends = self.day_only(startends)
-        #print startends
-        return startsends
-
+    def day_index(self, d):
+        key = random.choice(self.starts_ends.keys())
+        if key not in d:
+            return -1
+        else:
+            for dates in d[key]:
+                for start_end_index in range(len(self.starts_ends[key])):
+                    if dates[0] == self.starts_ends[key][start_end_index][0]:
+                        return start_end_index
+        return -1
+        
     def download_data(self, m, day1, maxday):
         url = "http://web.mta.info/developers/"
         path = "data/nyct/turnstile/"
@@ -211,12 +232,7 @@ class TurnStiles:
                 curl.close()
             day += 7
         
-    def challenge_1(self, multiple=False, filename = "turnstile_150627.txt"):
-        #if multiple:
-        #    files = ["turnstile_150606.txt", "turnstile_150613.txt", "turnstile_150620.txt", "turnstile_150627.txt"]
-        #    #data = self.combine_weeks(files)
-        #else:
-        #    #data = t.read_csv("testdata2.txt")
+    def challenge_1(self, filename = "turnstile_150627.txt"):
         data = t.read_csv(filename)
         return data
 
@@ -241,12 +257,21 @@ class TurnStiles:
         files = ["turnstile_150606.txt", "turnstile_150613.txt", "turnstile_150620.txt", "turnstile_150627.txt"]
         files.sort()
         dicts = []
+        final_dicts = []
         for f in files:
             d = self.read_csv(f)
             dicts.append(d)
         for d in dicts:
             d = self.datetime_entries(d)
-        self.combine_weeks(dicts)
+            c3 = self.challenge_3(d)
+            c5 = self.combine_terminals(c3, True)
+            c6 = self.combine_terminals(c5, False)
+            final_dicts.append(c6)
+        full_dicts = self.combine_weeks(final_dicts)
+        for next_dict in full_dicts:
+            c8 = self.day_entries(next_dict)
+            final_dicts.append(c8)
+        self.challenge_7(final_dicts, multiple=True)
         #return dicts
 
     def run_all(self, multiple=False):
