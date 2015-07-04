@@ -312,7 +312,7 @@ weekday_means(separate_weekday_weekend)[:10]
 
 # <codecell>
 
-def weekday_minus_weekend(data):
+def weekend_minus_weekday(data):
     delta_list = []
     for station in data:
         wday_nums = data[station][0][0]
@@ -328,11 +328,11 @@ def weekday_minus_weekend(data):
 
 # <codecell>
 
-weekday_minus_weekend(separate_weekday_weekend)[:10]
+weekend_minus_weekday(separate_weekday_weekend)[:10]
 
 # <codecell>
 
-def weekday_over_weekend(data):
+def weekend_over_weekday(data):
     delta_list = []
     for station in data:
         wday_nums = data[station][0][0]
@@ -348,7 +348,7 @@ def weekday_over_weekend(data):
 
 # <codecell>
 
-weekday_over_weekend(separate_weekday_weekend)[:10]
+weekend_over_weekday(separate_weekday_weekend)[:10]
 
 # <codecell>
 
