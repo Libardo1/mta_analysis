@@ -77,7 +77,7 @@ filelist()
 # <codecell>
 
 def read_csv(filename):
-    '''takes name of csv file, including extension'''
+    '''takes name of csv file, including extension, and returns a dictionary'''
     #C/A,UNIT,SCP,STATION,LINENAME,DIVISION,DATE,TIME,DESC,ENTRIES,EXITS
     data = {}
 
@@ -90,7 +90,7 @@ def read_csv(filename):
             next(incsv)
             for row in reader:
                 row = [' '.join(x.split()) for x in row] 
-                key = tuple(row[:4]) #SCP and Station
+                key = tuple(row[:4]) #C/A, Unit, SCP, Station
                 val = [row[6], row[7], row[10]] #date, time, exits
                 if key not in data:
                     data[key] = [val]
@@ -106,6 +106,7 @@ def read_csv(filename):
 
 # Combine several week's data
 def combine_weeks(files):
+    '''Takes a list of filenames to read'''
     d = {}
     dictlist = []
     for f in files:
@@ -137,6 +138,7 @@ evening
 # <codecell>
 
 def filter_timespan(date_time):
+    '''Selects for times between (20:00, 4:00]'''
     if date_time.time() <= morning or datetime.time() > evening :
         time_outlier = False
     else:
@@ -146,7 +148,7 @@ def filter_timespan(date_time):
 # <codecell>
 
 def adjust_night(date_time):
-    """adjust 0-4 times to belong to the previous day"""
+    """adjust 0-4 times to belong to the previous day, midnight-4am Saturday is considered Friday night"""
     if date_time.time() <= morning:
         date_time -= datetime.timedelta(days=1)
     return date_time
@@ -155,7 +157,7 @@ def adjust_night(date_time):
 
 #Challenge 2 
 def combine_datetime(data, count_in=2):
-    '''takes dictionary, data, converts to datetime, and get count deltas'''
+    '''takes dictionary, data, converts to datetime, and get count deltas, count_in=2 is the exit data'''
     #csv format: [,,06/20/2015, 00:00:00,,entries,]
     date_time = {}
     outlier = False
@@ -187,19 +189,22 @@ cleaned_dict = combine_datetime(full_dict)
 
 # <codecell>
 
-cleaned_dict.items()[0]
+#cleaned_dict.items()[0]
 
 # <codecell>
 
-def combine_days(data, date_bool=False):
+def combine_days(data):
+    '''Takes a dictionary, and combines 4 hour timespan
+    data into daily totals. Is also used to combine values
+    when the converting to dictionaries with simpler keys'''
     day_counts = {}
     for turnstile, rows in data.items():
         by_day = {}
         for time, count in rows:
-            if not date_bool:
-                day = time
+            if hasattr(time, 'hour'):
+                    day = time.date()
             else:
-                day = time.date()
+                day = time
             by_day[day] = by_day.get(day, 0) + count
         day_counts[turnstile] = sorted(by_day.items())
     return day_counts
@@ -208,11 +213,13 @@ night_counts = combine_days(cleaned_dict)
 
 # <codecell>
 
-night_counts.items()[0]
+#night_counts.items()[0]
 
 # <codecell>
 
 def combine_terminals(data, key_bool=False):
+    '''Used when making a dictionary with fewer/shorter 
+    keys than the previous dictionary'''
     all_terminals = {}
     for key, value in data.items():
         if key_bool == True:
@@ -221,7 +228,7 @@ def combine_terminals(data, key_bool=False):
         else:
             new_key = key[2]
             
-        if new_key in all_terminals:
+        if new_key in all_terminals: # add the value lists
             all_terminals[new_key] = all_terminals[new_key] + value
         else:
             all_terminals[new_key] = value
@@ -233,28 +240,34 @@ stations_only = combine_terminals(no_scp, False)
 
 # <codecell>
 
-stations_only['LEXINGTON AVE']
+#no_scp['A002','R051','LEXINGTON AVE']
+
+# <codecell>
+
+#stations_only['LEXINGTON AVE']
 
 # <codecell>
 
 def separate_weekday(data):
-        weekday_weekend = {}
-        for key in data:
-            weekday_num = 0
-            weekend_num = 0
-            weekday_count = 0
-            weekend_count = 0
-            for night in data[key]:
-                if night[0].weekday() <= WEDNESDAY:
-                    weekday_num += 1
-                    weekday_count += night[1]
-                elif (night[0].weekday() == FRIDAY or 
-                      night[0].weekday() == SATURDAY):
-                    weekend_num += 1
-                    weekend_count += night[1]
-            val = [(weekday_num, weekday_count), (weekend_num, weekend_count)]
-            weekday_weekend[key] = val
-        return weekday_weekend
+    '''Setparate the exit data into weekdays and weekends.
+    num=number of days, count=exit count'''
+    weekday_weekend = {}
+    for key in data:
+        weekday_num = 0
+        weekend_num = 0
+        weekday_count = 0
+        weekend_count = 0
+        for night in data[key]:
+            if night[0].weekday() <= WEDNESDAY:
+                weekday_num += 1
+                weekday_count += night[1]
+            elif (night[0].weekday() == FRIDAY or 
+                  night[0].weekday() == SATURDAY):
+                weekend_num += 1
+                weekend_count += night[1]
+        val = [(weekday_num, weekday_count), (weekend_num, weekend_count)]
+        weekday_weekend[key] = val
+    return weekday_weekend
 
 separate_weekday_weekend = separate_weekday(stations_only)
 
@@ -264,11 +277,13 @@ separate_weekday_weekend['LEXINGTON AVE']
 
 # <codecell>
 
-separate_weekday_weekend
+#separate_weekday_weekend
 
 # <codecell>
 
 def weekend_mean(data, station):
+    '''Calculates the mean number of exits over 
+    number of days for weekends for a given station'''
     nums = data[station][1][0]
     counts = data[station][1][1]
     if nums != 0:
@@ -284,6 +299,8 @@ weekend_mean(separate_weekday_weekend, 'LEXINGTON AVE')
 # <codecell>
 
 def weekday_mean(data, station):
+    '''Calculates the mean number of exits over
+    number of days for weekdays for a given station'''
     nums = data[station][0][0]
     counts = data[station][0][1]
     if nums != 0:
@@ -299,6 +316,8 @@ weekday_mean(separate_weekday_weekend, 'LEXINGTON AVE')
 # <codecell>
 
 def weekend_means(data):
+    '''Calculates weekend means for all stations
+    in the given dictionary'''
     mean_list = []
     for key in data:
         mean_list.append((key, weekend_mean(data, key)))
@@ -312,6 +331,8 @@ weekend_means(separate_weekday_weekend)[:10]
 # <codecell>
 
 def weekday_means(data):
+    '''Calculates weekday means for all stations
+    in the given dictionary'''
     mean_list = []
     for key in data:
         mean_list.append((key, weekday_mean(data, key)))
@@ -325,6 +346,7 @@ weekday_means(separate_weekday_weekend)[:10]
 # <codecell>
 
 def weekend_minus_weekday(data):
+    '''Calculates the (weekend counts/weekend days) - (weekday counts/weekday days)'''
     delta_list = []
     for station in data:
         wday_nums = data[station][0][0]
@@ -345,6 +367,8 @@ weekend_minus_weekday(separate_weekday_weekend)[:10]
 # <codecell>
 
 def weekend_over_weekday(data):
+    '''Calculates the (weekend counts/weekend days)/(weekday counts / weekday days)
+    would probably mean more if it used a threshold'''
     delta_list = []
     for station in data:
         wday_nums = data[station][0][0]
@@ -364,7 +388,9 @@ weekend_over_weekday(separate_weekday_weekend)[:10]
 
 # <codecell>
 
-percent_weekend = weekend_over_weekday(separate_weekday_weekend)[:10]
+#Plot the weekend / weekday results
+
+percent_weekend = weekend_over_weekday(separate_weekday_weekend)[:20]
 
 stations = []
 pcts = []
