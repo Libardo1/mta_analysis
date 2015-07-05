@@ -9,7 +9,7 @@ import pycurl
 import matplotlib.pyplot as plt
 import datetime
 from fractions import Fraction
-from operator import itemgetter
+import numpy as np
 
 %matplotlib inline
 
@@ -80,6 +80,7 @@ def read_csv(filename):
     '''takes name of csv file, including extension'''
     #C/A,UNIT,SCP,STATION,LINENAME,DIVISION,DATE,TIME,DESC,ENTRIES,EXITS
     data = {}
+
     with open(filename) as f:
         reader = csv.reader(f, skipinitialspace=True, delimiter=",")
         has_header = csv.Sniffer().has_header(f.read(1024))
@@ -89,13 +90,17 @@ def read_csv(filename):
             next(incsv)
             for row in reader:
                 row = [' '.join(x.split()) for x in row] 
-                key = tuple(row[2:4]) #SCP and Station
+                key = tuple(row[:4]) #SCP and Station
                 val = [row[6], row[7], row[10]] #date, time, exits
                 if key not in data:
                     data[key] = [val]
                 else:
                     data[key].append(val)
     return data
+
+# <codecell>
+
+#len(read_csv(filelist()).items())
 
 # <codecell>
 
@@ -119,6 +124,7 @@ full_dict = combine_weeks(filelist())
 # <codecell>
 
 full_dict.items()[0]
+len(full_dict.items())
 
 # <codecell>
 
@@ -181,7 +187,7 @@ cleaned_dict = combine_datetime(full_dict)
 
 # <codecell>
 
-cleaned_dict['02-00-00','LEXINGTON AVE']
+cleaned_dict.items()[0]
 
 # <codecell>
 
@@ -190,7 +196,7 @@ def combine_days(data, date_bool=False):
     for turnstile, rows in data.items():
         by_day = {}
         for time, count in rows:
-            if date_bool:
+            if not date_bool:
                 day = time
             else:
                 day = time.date()
@@ -202,22 +208,28 @@ night_counts = combine_days(cleaned_dict)
 
 # <codecell>
 
-night_counts['02-00-00','LEXINGTON AVE']
+night_counts.items()[0]
 
 # <codecell>
 
-def combine_terminals(data):
+def combine_terminals(data, key_bool=False):
     all_terminals = {}
     for key, value in data.items():
-        new_key = key[1]
+        if key_bool == True:
+            key_args = [key[0], key[1], key[3]]
+            new_key = tuple(key_args)
+        else:
+            new_key = key[2]
+            
         if new_key in all_terminals:
             all_terminals[new_key] = all_terminals[new_key] + value
         else:
             all_terminals[new_key] = value
-    all_terminals = combine_days(all_terminals, True)
+    all_terminals = combine_days(all_terminals)
     return all_terminals
 
-stations_only = combine_terminals(night_counts)
+no_scp = combine_terminals(night_counts, True)
+stations_only = combine_terminals(no_scp, False)
 
 # <codecell>
 
@@ -349,6 +361,22 @@ def weekend_over_weekday(data):
 # <codecell>
 
 weekend_over_weekday(separate_weekday_weekend)[:10]
+
+# <codecell>
+
+percent_weekend = weekend_over_weekday(separate_weekday_weekend)[:10]
+
+stations = []
+pcts = []
+for pct_tup in percent_weekend:
+    stations.append(pct_tup[0])
+    pcts.append(pct_tup[1])
+
+plt.figure(figsize=(10,3))
+plt.title('Weekend / Weekday')
+plt.xticks(np.arange(len(stations)), stations, rotation=90)
+plt.scatter(range(len(stations)),pcts)
+plt.show()
 
 # <codecell>
 
