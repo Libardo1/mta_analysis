@@ -49,22 +49,21 @@ class LateNight:
         return data
 
     #Challenge 2 
-    def combine_datetime(self, data, entry_in=2):
+    def combine_datetime(self, data, count_in=2):
         '''takes dictionary, data, converts to datetime, and get count deltas'''
         #csv format: [,,06/20/2015, 00:00:00,,entries,]
         date_time = {}
         outlier = False
-        time_outlier = False
         for key in data:
             temp = data[key]
             temp.sort()
             for x in range(len(temp)):
                 d_t_string = " ".join(temp[x][:2])
                 d_t = datetime.datetime.strptime(d_t_string,"%m/%d/%Y %H:%M:%S")
-                #d_t = self.adjust_night(d_t)
-                #time_outlier = self.filter_timespan(d_t)
+                d_t = self.adjust_night(d_t)
+                time_outlier = self.filter_timespan(d_t)
                 if x > 0:
-                    count = int(temp[x][entry_in]) - int(temp[x-1][entry_in])
+                    count = int(temp[x][count_in]) - int(temp[x-1][count_in])
                     val = [d_t, count]
                     if count < 0 or count > 5000:
                         outlier = True
@@ -100,37 +99,6 @@ class LateNight:
                 vals[v][0] = vals[v][0].date()
             data[key] = vals
         return data
-    '''
-    def combine_days(self, data):
-        day_entries = {}
-        for key in data:
-            vals = data[key]
-            vals.sort()
-            date = None
-            entries = 0
-            for v in range(len(vals)):
-                nextdate = vals[v][0]
-                if date is not None:
-                    current = vals[v-1]
-                    entries += current[1]
-                    if date != nextdate:
-                        val = [current[0], entries]
-                        entries = 0
-                        if key not in day_entries:
-                            day_entries[key] = [val]
-                        else:
-                            day_entries[key].append(val)
-                    if v == len(vals) - 1:
-                        entries += vals[v][1]
-                        val = [vals[v][0], entries]
-                        entries = 0
-                        if key not in day_entries:
-                            day_entries[key] = [val]
-                        else:
-                            day_entries[key].append(val)
-                date = nextdate
-        return day_entries
-    '''
 
     def combine_days(self, data, date_bool=False):
         day_counts = {}
@@ -155,24 +123,6 @@ class LateNight:
                 all_terminals[new_key] = value
         all_terminals = self.combine_days(all_terminals, True)
         return all_terminals
-        
-    def separate_weekday(self, data):
-        weekdays = {}
-        weekends = {}
-        for key in data:
-            for night in data[key]:
-                if night[0].weekday() <= self.WEDNESDAY:
-                    if key in weekdays:
-                        weekdays[key].append(night)
-                    else:
-                        weekdays[key] = [night]
-                elif (night[0].weekday() == self.FRIDAY or 
-                      night[0].weekday() == self.SATURDAY):
-                    if key in weekends:
-                        weekends[key].append(night)
-                    else:
-                        weekends[key] = [night]
-        return weekdays, weekends
     
     def separate_day(self, data):
         for key in data:
@@ -194,6 +144,24 @@ class LateNight:
                     day[key].append(night)
                 elif not other:
                     day[key] = [night]
+
+    def separate_weekday(self, data):
+        weekdays = {}
+        weekends = {}
+        for key in data:
+            for night in data[key]:
+                if night[0].weekday() <= self.WEDNESDAY:
+                    if key in weekdays:
+                        weekdays[key].append(night)
+                    else:
+                        weekdays[key] = [night]
+                elif (night[0].weekday() == self.FRIDAY or 
+                      night[0].weekday() == self.SATURDAY):
+                    if key in weekends:
+                        weekends[key].append(night)
+                    else:
+                        weekends[key] = [night]
+        return weekdays, weekends
 
     def num_day(self, d_of_w, station):
         '''takes a day of week dictionary and station key, 
@@ -333,7 +301,7 @@ if __name__ == "__main__":
     d = l.combine_days(d)
     d = l.combine_terminals(d)
     #d = l.combine_terminls(d, False)
-    print d
+    #print d
     #wdays, wends = l.separate_weekday(d)
     l.separate_day(d)
     print l.weekend_mean('34 ST-PENN STA')

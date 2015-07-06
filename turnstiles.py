@@ -4,7 +4,7 @@ import random
 import urllib2
 import pycurl
 import matplotlib.pyplot as plt
-from collections import defaultdict
+import numpy as np
 
 class TurnStiles:
     
@@ -13,6 +13,8 @@ class TurnStiles:
         self.starts = {}
         self.ends = {}
         self.starts_ends = {}
+        self.names = ["Saturday", "Sunday", "Monday", "Tuesday", 
+                      "Wednesday", "Thursday", "Friday"]
 
     #Challenge 1
     def read_csv(self, filename):
@@ -49,12 +51,12 @@ class TurnStiles:
                 d_t = datetime.datetime.strptime(d_t_string,"%m/%d/%Y %H:%M:%S")
                 if x > 0:
                     count = int(temp[x][entry_in]) - int(temp[x-1][entry_in])
-                    val = [d_t, count ]
+                    val = [d_t, count]
                     if count < 0 or count > 5000:
                         outlier = True
                 else:
                     val = [d_t, 0] #could cause problems later
-    
+                # clean data
                 if not outlier:
                     if x == (len(temp) -1) or x == 0:
                         if key not in self.starts_ends:
@@ -67,7 +69,9 @@ class TurnStiles:
                         date_time[key].append(val)
                 outlier = False
         return date_time
-            
+    
+    #Aaron's code is much cleaner looking and would also work 
+    #for all three challenges, but I'll leave this here for now 
     #Challenge 3, 5, 6
     def day_entries(self, data):
         '''takes dictionary, data, and combines counts in same date'''
@@ -77,7 +81,6 @@ class TurnStiles:
             vals.sort()
             date = None
             entries = 0
-            #print key
             for v in range(len(vals)):
                 isdatetime = vals[v][0]
                 if hasattr(isdatetime, 'hour'):
@@ -117,7 +120,7 @@ class TurnStiles:
 
     #Challenge 4, 7
     def plot_random(self, data, multiple=False):
-        #print data
+        '''plots a graph of a randomly chosen key'''
         key = random.choice(data.keys())
         terminal = data[key]
         if multiple:
@@ -166,10 +169,13 @@ class TurnStiles:
         for item in weeks:
             plt.plot(dates, item)
         plt.title(key)
+        plt.xticks(np.arange(len(self.names)), self.names)
         plt.show()
 
     #Challenge 5, 6
     def combine_terminals(self, data, key_bool):
+        '''takes a dictionary and a boolean to determine which
+        keys to keep in the resulting dictionary'''
         all_terminals = {}
         for key, value in data.items():
             if key_bool == True:
@@ -187,6 +193,8 @@ class TurnStiles:
 
     # Challenge 8?
     def combine_weeks(self, files):
+        '''reads in a series of files and combines the resulting dictionaries
+        into a single dictionary'''
         d = {}
         dictlist = []
         for f in files:
@@ -194,7 +202,6 @@ class TurnStiles:
             dictlist.append(di)
         for dl in dictlist:
             for key in dl:
-                #print key
                 if key in d:
                     d[key] += dl[key]
                 else:
@@ -228,23 +235,19 @@ class TurnStiles:
 
     #Challenge 10
     def plot_total_ridership(self, data_list):
-        xs = []
         ys = []
         for dl in data_list:
-            #xs.append(dl[0])
             ys.append(dl[1])
-        #plt.hist(xs, ys)
         plt.hist(ys)
         plt.title("hist of total ridership for june")
-        plt.yscale('log')
         plt.show()
         indices = range(len(ys))
         plt.bar(indices, ys)
-        plt.yscale('log')
         plt.title("bar graph of total ridership for june")
         plt.show()
         
     def download_data(self, m, day1, maxday):
+        '''download mta data from the internet'''
         url = "http://web.mta.info/developers/"
         path = "data/nyct/turnstile/"
         month = m
@@ -277,7 +280,7 @@ class TurnStiles:
 
     def challenge_7(self, data, multiple):
         self.plot_random(data, multiple=multiple)
-        stations = ["LEXINGTON AVE", "5 AVE-59 ST", "57 ST-7 AVE", "34 ST-HERALD SQ", "28 ST-BROADWAY"]
+        stations = ["LEXINGTON AVE", "5 AVE-59 ST", "28 ST-BROADWAY"]
         for place in stations:
             self.plot_specific(data, place, multiple=multiple)
 
@@ -295,13 +298,13 @@ class TurnStiles:
     def run_all(self, multiple=False):
         #self.download_data("turnstile_1504", 4, 30)
         #self.download_data("turnstile_1505", 2, 31)
-        #d = self.challenge_1(multiple=multiple)
-        #d_t = self.datetime_entries(d)
-        #c3 = self.challenge_3(d_t)
-        #self.challenge_4(c3, multiple=multiple)
-        #c5 = self.combine_terminals(c3, True)
-        #c6 = self.combine_terminals(c5, False)
-        #self.challenge_7(c6, multiple=multiple)
+        d = self.challenge_1()
+        d_t = self.datetime_entries(d)
+        c3 = self.challenge_3(d_t)
+        self.challenge_4(c3, multiple=multiple)
+        c5 = self.combine_terminals(c3, True)
+        c6 = self.combine_terminals(c5, False)
+        self.challenge_7(c6, multiple=multiple)
         d = self.challenge_8()
         d = self.week_ridership(d)
         self.plot_total_ridership(d)
@@ -313,7 +316,7 @@ if __name__ == "__main__":
     t.run_all(multiple=False)
 
     ##TODO linter emacs
-    ##TODO eliminate 0 <= count <= 5000 in challenge 2
+
     ## daytime_counts = {turnstile: [(time, count) for (time, count, _)
     ##                                in rows if 0 <= count <= 5000]
     ##                  for turnstile, rows in datetime_count_times.items()}
